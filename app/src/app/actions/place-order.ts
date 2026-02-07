@@ -92,8 +92,8 @@ export async function placeOrder(input: PlaceOrderInput) {
 
   if (itemsError) {
     console.error('Order items error:', itemsError.message);
-    // Order was created but items failed — still return the order
-    return { error: 'Order created but some items may not have saved. Please check your order history.' };
+    // Order was created but items failed — return the order number so the cart still clears
+    return { order_number: order.order_number, warning: 'Order placed but some items may not have saved. Please check your order history.' };
   }
 
   return { order_number: order.order_number };

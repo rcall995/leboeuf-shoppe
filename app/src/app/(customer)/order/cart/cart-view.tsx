@@ -43,7 +43,11 @@ export function CartView() {
       }
 
       clearCart();
-      toast.success(`Order ${result.order_number} placed!`);
+      if (result.warning) {
+        toast.warning(result.warning);
+      } else {
+        toast.success(`Order ${result.order_number} placed!`);
+      }
       router.push('/order/history');
     } catch {
       toast.error('Something went wrong. Please try again.');
