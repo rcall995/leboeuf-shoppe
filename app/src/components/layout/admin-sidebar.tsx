@@ -8,6 +8,9 @@ import {
   Package,
   Users,
   Warehouse,
+  ClipboardCheck,
+  Truck,
+  Megaphone,
   Settings,
   LogOut,
   Menu,
@@ -26,6 +29,9 @@ const navItems = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/customers', label: 'Customers', icon: Users },
   { href: '/admin/inventory', label: 'Inventory', icon: Warehouse },
+  { href: '/admin/pick-lists', label: 'Pick Lists', icon: ClipboardCheck },
+  { href: '/admin/delivery-routes', label: 'Delivery', icon: Truck },
+  { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

@@ -217,6 +217,62 @@ export interface Announcement {
   created_at: string;
 }
 
+export interface AnnouncementRead {
+  id: string;
+  tenant_id: string;
+  announcement_id: string;
+  profile_id: string;
+  read_at: string;
+}
+
+export interface PickList {
+  id: string;
+  tenant_id: string;
+  order_id: string;
+  assigned_to: string | null;
+  is_complete: boolean;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface PickListItem {
+  id: string;
+  tenant_id: string;
+  pick_list_id: string;
+  order_item_id: string;
+  lot_id: string | null;
+  picked: boolean;
+  picked_weight_lb: number | null;
+  picked_at: string | null;
+  created_at: string;
+}
+
+export interface DeliveryRoute {
+  id: string;
+  tenant_id: string;
+  name: string;
+  driver_id: string | null;
+  route_date: string;
+  is_complete: boolean;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface DeliveryStop {
+  id: string;
+  tenant_id: string;
+  route_id: string;
+  order_id: string;
+  customer_id: string;
+  stop_order: number;
+  delivered: boolean;
+  delivered_at: string | null;
+  signature_url: string | null;
+  photo_url: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 // Joined/computed types used in the app
 export interface ProductWithVariants extends Product {
   category: Category | null;

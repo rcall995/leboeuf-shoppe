@@ -1,24 +1,36 @@
 import { requireAdmin } from '@/lib/auth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { createClient } from '@/lib/supabase/server';
+import { SettingsView } from './settings-view';
 
 export default async function SettingsPage() {
-  await requireAdmin();
+  const profile = await requireAdmin();
+  const supabase = await createClient();
+
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('id', profile.tenant_id)
+    .single();
+
+  type TenantRow = {
+    id: string;
+    name: string;
+    slug: string;
+    domain: string | null;
+    logo_url: string | null;
+    settings: {
+      contact_email?: string;
+      contact_phone?: string;
+      address?: string;
+      tagline?: string;
+    };
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Settings</h2>
-        <p className="text-muted-foreground">Manage your account and business settings</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Business Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">Settings will be configurable here — business info, integrations, user management.</p>
-        </CardContent>
-      </Card>
-    </div>
+    <SettingsView
+      tenant={(tenant ?? { id: '', name: '', slug: '', domain: null, logo_url: null, settings: {} }) as unknown as TenantRow}
+      profileName={profile.full_name}
+      profileEmail={profile.email}
+    />
   );
 }
