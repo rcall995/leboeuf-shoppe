@@ -32,6 +32,7 @@ export function CartView() {
           price_per_unit: item.price_per_unit,
           unit: item.unit,
           weight_type: item.weight_type,
+          estimated_weight_per_piece: item.estimated_weight_per_piece,
         })),
         notes: notes || undefined,
       });
@@ -80,7 +81,10 @@ export function CartView() {
 
       <div className="space-y-3">
         {items.map((item) => {
-          const lineEst = item.quantity_lbs * item.price_per_unit;
+          const isCase = item.unit === 'case';
+          const lineEst = isCase
+            ? item.quantity_lbs * (item.estimated_weight_per_piece ?? 0) * item.price_per_unit
+            : item.quantity_lbs * item.price_per_unit;
 
           return (
             <Card key={item.variant_id} className="shadow-sm">
@@ -98,8 +102,13 @@ export function CartView() {
                     </div>
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="text-sm font-semibold">
-                        ${Number(item.price_per_unit).toFixed(2)}/{item.unit}
+                        ${Number(item.price_per_unit).toFixed(2)}/lb
                       </span>
+                      {isCase && item.estimated_weight_per_piece && (
+                        <span className="text-xs text-muted-foreground">
+                          ({item.estimated_weight_per_piece} lb case)
+                        </span>
+                      )}
                       {item.weight_type === 'catch_weight' && (
                         <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
                           <Scale className="h-3 w-3" />
@@ -115,18 +124,20 @@ export function CartView() {
                       <div className="flex items-center gap-1.5 border rounded-md px-2.5 h-8 focus-within:ring-1 focus-within:ring-ring">
                         <input
                           type="number"
-                          min="0.1"
-                          step="0.5"
+                          min={isCase ? '1' : '0.1'}
+                          step={isCase ? '1' : '0.5'}
                           value={item.quantity_lbs}
                           onChange={(e) => {
                             const val = parseFloat(e.target.value);
                             if (!isNaN(val) && val > 0) {
-                              updateItem(item.variant_id, val);
+                              updateItem(item.variant_id, isCase ? Math.floor(val) : val);
                             }
                           }}
                           className="w-16 text-sm bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
-                        <span className="text-xs text-muted-foreground font-medium">lbs</span>
+                        <span className="text-xs text-muted-foreground font-medium">
+                          {isCase ? 'cases' : 'lbs'}
+                        </span>
                       </div>
                       <Button
                         size="icon"

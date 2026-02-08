@@ -68,6 +68,12 @@ export function ProductForm({ open, onOpenChange, product, categories }: Product
   const [isActive, setIsActive] = useState(product?.is_active ?? true);
   const [saving, setSaving] = useState(false);
 
+  // Track newly created product so we can add variants without closing
+  const [createdProductId, setCreatedProductId] = useState<string | null>(null);
+  const canAddVariants = isEdit || !!createdProductId;
+  const productId = product?.id ?? createdProductId;
+  const variants = product?.variants ?? [];
+
   // Variant being added/edited
   const [showVariantForm, setShowVariantForm] = useState(false);
   const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
@@ -79,6 +85,22 @@ export function ProductForm({ open, onOpenChange, product, categories }: Product
     setDescription('');
     setCategoryId('');
     setIsActive(true);
+    setCreatedProductId(null);
+    setShowVariantForm(false);
+    setEditingVariantId(null);
+    setVariantForm(EMPTY_VARIANT);
+  }
+
+  // Sync state when product prop changes (e.g., opening edit for a different product)
+  const currentProductId = product?.id ?? null;
+  const [lastProductId, setLastProductId] = useState(currentProductId);
+  if (currentProductId !== lastProductId) {
+    setLastProductId(currentProductId);
+    setName(product?.name ?? '');
+    setDescription(product?.description ?? '');
+    setCategoryId(product?.category_id ?? '');
+    setIsActive(product?.is_active ?? true);
+    setCreatedProductId(null);
     setShowVariantForm(false);
     setEditingVariantId(null);
     setVariantForm(EMPTY_VARIANT);
@@ -100,8 +122,8 @@ export function ProductForm({ open, onOpenChange, product, categories }: Product
       if (isEdit) {
         const result = await updateProduct(product.id, {
           name: name.trim(),
-          description: description.trim(),
-          category_id: categoryId || null,
+          description: description.trim() || undefined,
+          ...(categoryId ? { category_id: categoryId } : { category_id: null }),
           is_active: isActive,
         });
         if (result.error) {
@@ -109,20 +131,22 @@ export function ProductForm({ open, onOpenChange, product, categories }: Product
           return;
         }
         toast.success('Product updated');
+        handleOpenChange(false);
       } else {
         const result = await createProduct({
           name: name.trim(),
-          description: description.trim(),
-          category_id: categoryId || null,
+          description: description.trim() || undefined,
+          ...(categoryId ? { category_id: categoryId } : {}),
           is_active: isActive,
         });
         if (result.error) {
           toast.error(typeof result.error === 'string' ? result.error : 'Validation failed');
           return;
         }
-        toast.success('Product created');
+        // Stay open so user can add variants immediately
+        setCreatedProductId(result.id!);
+        toast.success('Product created — now add variants below');
       }
-      handleOpenChange(false);
     } finally {
       setSaving(false);
     }
@@ -180,11 +204,11 @@ export function ProductForm({ open, onOpenChange, product, categories }: Product
         }
         toast.success('Variant updated');
       } else {
-        if (!product?.id) {
+        if (!productId) {
           toast.error('Save the product first, then add variants');
           return;
         }
-        const result = await createVariant(product.id, data);
+        const result = await createVariant(productId, data);
         if (result.error) {
           toast.error(result.error);
           return;
@@ -261,12 +285,12 @@ export function ProductForm({ open, onOpenChange, product, categories }: Product
             <Switch id="product-active" checked={isActive} onCheckedChange={setIsActive} />
           </div>
 
-          <Button onClick={handleSaveProduct} disabled={saving} className="w-full">
-            {saving ? 'Saving...' : isEdit ? 'Update Product' : 'Create Product'}
+          <Button onClick={handleSaveProduct} disabled={saving || !!createdProductId} className="w-full">
+            {saving ? 'Saving...' : createdProductId ? 'Product Created' : isEdit ? 'Update Product' : 'Create Product'}
           </Button>
 
-          {/* Variants section — only show for existing products */}
-          {isEdit && (
+          {/* Variants section — show for existing products and newly created */}
+          {canAddVariants && (
             <>
               <Separator />
 
@@ -282,7 +306,7 @@ export function ProductForm({ open, onOpenChange, product, categories }: Product
                 </div>
 
                 {/* Existing variants list */}
-                {product.variants.map((v) => (
+                {variants.map((v) => (
                   <div key={v.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -431,10 +455,22 @@ export function ProductForm({ open, onOpenChange, product, categories }: Product
             </>
           )}
 
-          {!isEdit && (
+          {!isEdit && !createdProductId && (
             <p className="text-xs text-muted-foreground text-center">
-              After creating the product, you can add variants.
+              Create the product first, then add variants with pricing and unit type below.
             </p>
+          )}
+
+          {createdProductId && variants.length === 0 && !showVariantForm && (
+            <p className="text-xs text-muted-foreground text-center">
+              Add at least one variant to make this product orderable.
+            </p>
+          )}
+
+          {createdProductId && (
+            <Button variant="outline" onClick={() => handleOpenChange(false)} className="w-full">
+              Done
+            </Button>
           )}
         </div>
       </SheetContent>

@@ -47,10 +47,18 @@ export function CatalogView({ categories }: CatalogViewProps) {
   function handleAdd(row: PricingRow) {
     const v = row.variant;
     const inputVal = lbsInputs[v.id];
-    const lbs = parseFloat(inputVal);
+    const qty = parseFloat(inputVal);
+    const isCase = v.unit === 'case';
 
-    if (!inputVal || isNaN(lbs) || lbs <= 0) {
-      toast.error('Enter weight in lbs');
+    if (!inputVal || isNaN(qty) || qty <= 0) {
+      toast.error(isCase ? 'Enter number of cases' : 'Enter weight in lbs');
+      return;
+    }
+
+    // Cases must be whole numbers
+    const finalQty = isCase ? Math.floor(qty) : qty;
+    if (isCase && finalQty < 1) {
+      toast.error('Must order at least 1 case');
       return;
     }
 
@@ -59,7 +67,7 @@ export function CatalogView({ categories }: CatalogViewProps) {
       product_name: v.product.name,
       variant_name: v.name,
       sku: v.sku,
-      quantity_lbs: lbs,
+      quantity_lbs: finalQty,
       price_per_unit: row.price_per_unit,
       unit: v.unit,
       weight_type: v.weight_type,
@@ -78,7 +86,11 @@ export function CatalogView({ categories }: CatalogViewProps) {
       });
     }, 1500);
 
-    toast.success(`Added ${lbs} lbs of ${v.product.name}`);
+    toast.success(
+      isCase
+        ? `Added ${finalQty} case${finalQty !== 1 ? 's' : ''} of ${v.product.name}`
+        : `Added ${finalQty} lbs of ${v.product.name}`
+    );
   }
 
   const getCartLbs = (variantId: string) =>
@@ -128,8 +140,14 @@ export function CatalogView({ categories }: CatalogViewProps) {
                       <div className="flex items-center gap-3 mt-2">
                         <span className="text-base font-bold text-primary">
                           ${Number(row.price_per_unit).toFixed(2)}
-                          <span className="text-xs font-normal text-muted-foreground">/{v.unit}</span>
+                          <span className="text-xs font-normal text-muted-foreground">/lb</span>
                         </span>
+
+                        {v.unit === 'case' && v.estimated_weight_lb && (
+                          <span className="text-xs text-muted-foreground">
+                            ({v.estimated_weight_lb} lb case)
+                          </span>
+                        )}
 
                         {v.weight_type === 'catch_weight' && (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -151,8 +169,8 @@ export function CatalogView({ categories }: CatalogViewProps) {
                         <div className="flex items-center gap-1.5 border rounded-md px-2.5 h-9 focus-within:ring-1 focus-within:ring-ring">
                           <input
                             type="number"
-                            min="0.1"
-                            step="0.5"
+                            min={v.unit === 'case' ? '1' : '0.1'}
+                            step={v.unit === 'case' ? '1' : '0.5'}
                             placeholder="0"
                             value={inputVal}
                             onChange={(e) =>
@@ -163,7 +181,9 @@ export function CatalogView({ categories }: CatalogViewProps) {
                             }}
                             className="w-16 text-sm bg-transparent focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
-                          <span className="text-xs text-muted-foreground font-medium">lbs</span>
+                          <span className="text-xs text-muted-foreground font-medium">
+                            {v.unit === 'case' ? 'cases' : 'lbs'}
+                          </span>
                         </div>
                         <Button
                           size="sm"
@@ -181,7 +201,7 @@ export function CatalogView({ categories }: CatalogViewProps) {
                       {inCartLbs > 0 && (
                         <span className="text-xs font-medium text-primary flex items-center gap-1">
                           <ShoppingCart className="h-3 w-3" />
-                          {inCartLbs} lbs
+                          {inCartLbs} {v.unit === 'case' ? (inCartLbs === 1 ? 'case' : 'cases') : 'lbs'}
                         </span>
                       )}
                     </div>

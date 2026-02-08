@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
   Truck,
   Megaphone,
+  BarChart3,
   Settings,
   LogOut,
   Menu,
@@ -32,6 +33,7 @@ const navItems = [
   { href: '/admin/pick-lists', label: 'Pick Lists', icon: ClipboardCheck },
   { href: '/admin/delivery-routes', label: 'Delivery', icon: Truck },
   { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
+  { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

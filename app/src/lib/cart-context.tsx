@@ -83,7 +83,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const itemCount = items.length;
 
   const estimatedTotal = items.reduce((sum, item) => {
-    // For all weight-based items: lbs × price_per_lb
+    if (item.unit === 'case') {
+      // Cases: quantity × case_weight × price_per_lb
+      return sum + item.quantity_lbs * (item.estimated_weight_per_piece ?? 0) * item.price_per_unit;
+    }
+    // Weight-based: lbs × price_per_lb
     return sum + item.quantity_lbs * item.price_per_unit;
   }, 0);
 

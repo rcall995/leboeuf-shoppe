@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getProfile } from '@/lib/auth';
+import { sendOrderConfirmation } from '@/lib/email';
 
 interface OrderItemInput {
   variant_id: string;
@@ -9,6 +10,7 @@ interface OrderItemInput {
   price_per_unit: number;
   unit: string;
   weight_type: string;
+  estimated_weight_per_piece?: number | null;
 }
 
 interface PlaceOrderInput {
@@ -27,7 +29,7 @@ export async function placeOrder(input: PlaceOrderInput) {
   // Get customer record
   const { data: customer, error: custError } = await supabase
     .from('customers')
-    .select('id')
+    .select('id, email, contact_name, business_name')
     .eq('profile_id', profile.id)
     .single();
 
@@ -45,8 +47,12 @@ export async function placeOrder(input: PlaceOrderInput) {
 
   const order_number = orderNum ?? `ORD-${Date.now()}`;
 
-  // Calculate estimated total (lbs × price per unit)
+  // Calculate estimated total
   const estimated_total = input.items.reduce((sum, item) => {
+    if (item.unit === 'case') {
+      // Cases: quantity × case_weight × price_per_lb
+      return sum + item.quantity_lbs * (item.estimated_weight_per_piece ?? 0) * item.price_per_unit;
+    }
     return sum + item.quantity_lbs * item.price_per_unit;
   }, 0);
 
@@ -72,16 +78,20 @@ export async function placeOrder(input: PlaceOrderInput) {
 
   // Create order items
   const orderItems = input.items.map((item) => {
-    const estLineTotal = item.quantity_lbs * item.price_per_unit;
+    const isCase = item.unit === 'case';
+    const caseWeight = item.estimated_weight_per_piece ?? 0;
+    const estLineTotal = isCase
+      ? item.quantity_lbs * caseWeight * item.price_per_unit
+      : item.quantity_lbs * item.price_per_unit;
 
     return {
       tenant_id: profile.tenant_id,
       order_id: order.id,
       variant_id: item.variant_id,
-      quantity: 1, // single line per variant
+      quantity: isCase ? item.quantity_lbs : 1,
       unit: item.unit as 'lb' | 'kg' | 'each' | 'case',
       price_per_unit: item.price_per_unit,
-      estimated_weight_lb: item.quantity_lbs,
+      estimated_weight_lb: isCase ? item.quantity_lbs * caseWeight : item.quantity_lbs,
       estimated_line_total: Math.round(estLineTotal * 100) / 100,
     };
   });
@@ -94,6 +104,33 @@ export async function placeOrder(input: PlaceOrderInput) {
     console.error('Order items error:', itemsError.message);
     // Order was created but items failed — return the order number so the cart still clears
     return { order_number: order.order_number, warning: 'Order placed but some items may not have saved. Please check your order history.' };
+  }
+
+  // Send confirmation email (fire-and-forget)
+  if (customer.email) {
+    // Fetch variant names for the email
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('id, name, product:products(name)')
+      .in('id', input.items.map((i) => i.variant_id));
+
+    type VariantLookup = { id: string; name: string; product: { name: string } };
+    const variantMap = new Map(
+      ((variants ?? []) as unknown as VariantLookup[]).map((v) => [v.id, `${v.product.name} - ${v.name}`])
+    );
+
+    sendOrderConfirmation({
+      to: customer.email,
+      customerName: customer.contact_name ?? customer.business_name,
+      orderNumber: order.order_number,
+      estimatedTotal: Math.round(estimated_total * 100) / 100,
+      items: input.items.map((item) => ({
+        productName: variantMap.get(item.variant_id) ?? 'Product',
+        quantity: item.quantity_lbs,
+        unit: item.unit,
+        pricePerUnit: item.price_per_unit,
+      })),
+    });
   }
 
   return { order_number: order.order_number };

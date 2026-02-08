@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getProfile } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { sendOrderStatusUpdate } from '@/lib/email';
 
 const STATUS_FLOW: Record<string, string[]> = {
   pending: ['confirmed', 'cancelled'],
@@ -52,6 +53,31 @@ export async function updateOrderStatus(orderId: string, newStatus: string) {
   if (error) {
     console.error('updateOrderStatus error:', error.message);
     return { error: 'Failed to update order status' };
+  }
+
+  // Send status update email for key transitions (fire-and-forget)
+  if (['confirmed', 'out_for_delivery', 'delivered'].includes(newStatus)) {
+    const { data: orderDetail } = await supabase
+      .from('orders')
+      .select('order_number, customer:customers(email, contact_name, business_name)')
+      .eq('id', orderId)
+      .single();
+
+    if (orderDetail) {
+      const cust = orderDetail.customer as unknown as {
+        email: string | null;
+        contact_name: string | null;
+        business_name: string;
+      };
+      if (cust?.email) {
+        sendOrderStatusUpdate({
+          to: cust.email,
+          customerName: cust.contact_name ?? cust.business_name,
+          orderNumber: orderDetail.order_number,
+          newStatus,
+        });
+      }
+    }
   }
 
   revalidatePath(`/admin/orders/${orderId}`);
