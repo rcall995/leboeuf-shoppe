@@ -8,7 +8,7 @@ import { z } from 'zod/v4';
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
-  category_id: z.string().uuid().optional(),
+  category_id: z.string().optional(),
   is_active: z.boolean().optional(),
 });
 
