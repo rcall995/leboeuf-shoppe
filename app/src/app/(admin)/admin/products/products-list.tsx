@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus, Package, Pencil } from 'lucide-react';
+import { Plus, Package, Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { deleteProduct } from '@/app/actions/products';
 import { ProductForm } from './product-form';
 
 interface Category {
@@ -55,6 +57,18 @@ export function ProductsList({ products, categories }: ProductsListProps) {
     setFormOpen(true);
   }
 
+  async function handleDelete(product: Product) {
+    if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
+    const result = await deleteProduct(product.id);
+    if (result.error) {
+      toast.error(result.error);
+    } else if (result.deactivated) {
+      toast.info(`"${product.name}" deactivated (referenced by existing orders)`);
+    } else {
+      toast.success(`"${product.name}" deleted`);
+    }
+  }
+
   const totalVariants = products.reduce((acc, p) => acc + p.variants.length, 0);
 
   return (
@@ -102,6 +116,9 @@ export function ProductsList({ products, categories }: ProductsListProps) {
                     </Badge>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(product)}>
                       <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(product)}>
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
