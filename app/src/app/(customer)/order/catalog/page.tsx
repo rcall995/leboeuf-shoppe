@@ -1,7 +1,6 @@
 import { requireCustomer } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { CatalogView } from './catalog-view';
-import { AnnouncementsBanner } from '@/components/announcements/announcements-banner';
 
 export default async function CatalogPage() {
   const profile = await requireCustomer();
@@ -97,38 +96,5 @@ export default async function CatalogPage() {
     items: data.items,
   }));
 
-  // Fetch active announcements
-  const now = new Date().toISOString();
-  const { data: announcements } = await supabase
-    .from('announcements')
-    .select('id, title, body, published_at')
-    .eq('tenant_id', profile.tenant_id)
-    .not('published_at', 'is', null)
-    .lte('published_at', now)
-    .or(`expires_at.is.null,expires_at.gt.${now}`);
-
-  // Fetch which ones the user has read
-  const { data: reads } = await supabase
-    .from('announcement_reads')
-    .select('announcement_id')
-    .eq('profile_id', profile.id);
-
-  const readIds = new Set((reads ?? []).map((r: { announcement_id: string }) => r.announcement_id));
-
-  type AnnouncementRow = {
-    id: string;
-    title: string;
-    body: string;
-    published_at: string | null;
-  };
-
-  return (
-    <>
-      <AnnouncementsBanner
-        announcements={(announcements ?? []) as unknown as AnnouncementRow[]}
-        readIds={readIds}
-      />
-      <CatalogView categories={grouped} />
-    </>
-  );
+  return <CatalogView categories={grouped} />;
 }

@@ -27,7 +27,7 @@ export default async function Home() {
   }
 
   if (profile.role === 'customer') {
-    redirect('/order/catalog');
+    redirect('/order');
   } else {
     redirect('/admin');
   }

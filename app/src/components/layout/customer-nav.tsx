@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, ShoppingCart, ClipboardList, User, Beef } from 'lucide-react';
+import { Home, ShoppingBag, ShoppingCart, ClipboardList, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/lib/cart-context';
 
 const navItems = [
+  { href: '/order', label: 'Home', icon: Home, exact: true },
   { href: '/order/catalog', label: 'Catalog', icon: ShoppingBag },
   { href: '/order/cart', label: 'Cart', icon: ShoppingCart },
   { href: '/order/history', label: 'Orders', icon: ClipboardList },
@@ -17,34 +19,41 @@ export function CustomerNav() {
   const pathname = usePathname();
   const { itemCount } = useCart();
 
-  const isActive = (href: string) => pathname.startsWith(href);
+  const isActive = (item: typeof navItems[number]) =>
+    item.exact ? pathname === item.href : pathname.startsWith(item.href);
 
   return (
     <>
       {/* Top header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground px-4 py-3">
-        <div className="flex items-center justify-center gap-2 max-w-lg mx-auto">
-          <Beef className="h-5 w-5" />
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#2a2a2a] text-white px-4 py-2">
+        <Link href="/order" className="flex items-center justify-center gap-2.5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto">
+          <Image
+            src="/images/le_boeuf_logo_simple.jpg"
+            alt="Le Boeuf Shoppe"
+            width={36}
+            height={36}
+            className="rounded"
+          />
           <h1 className="text-sm font-bold tracking-tight">Le Boeuf Shoppe</h1>
-        </div>
+        </Link>
       </header>
 
       {/* Bottom navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t">
-        <div className="flex items-center justify-around py-1.5 max-w-lg mx-auto">
+        <div className="flex items-center justify-around py-1.5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                'relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-w-[64px]',
-                isActive(item.href)
+                'relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors min-w-[56px]',
+                isActive(item)
                   ? 'text-primary'
                   : 'text-muted-foreground'
               )}
             >
               <div className="relative">
-                <item.icon className={cn('h-5 w-5', isActive(item.href) && 'stroke-[2.5]')} />
+                <item.icon className={cn('h-5 w-5', isActive(item) && 'stroke-[2.5]')} />
                 {item.href === '/order/cart' && itemCount > 0 && (
                   <span className="absolute -top-1.5 -right-2.5 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1">
                     {itemCount}
