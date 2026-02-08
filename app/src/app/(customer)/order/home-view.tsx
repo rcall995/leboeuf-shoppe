@@ -87,7 +87,7 @@ export function HomeView({ customerName, businessName, recentOrders, announcemen
             className="w-full h-auto"
             priority
           />
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-black/70 via-black/20 via-40% to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
             <p className="text-white/80 text-xs sm:text-sm font-medium tracking-wider uppercase">
               {businessName}
