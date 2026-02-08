@@ -8,7 +8,7 @@ import { z } from 'zod/v4';
 const productSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
-  category_id: z.union([z.string().uuid(), z.literal('')]).nullable().optional().transform(v => v || null),
+  category_id: z.string().uuid().optional(),
   is_active: z.boolean().optional(),
 });
 
@@ -35,7 +35,14 @@ export async function createProduct(formData: {
     return { error: 'Unauthorized' };
   }
 
-  const parsed = productSchema.safeParse(formData);
+  // Strip empty/null category_id before validation
+  const cleanData = {
+    ...formData,
+    category_id: formData.category_id || undefined,
+    description: formData.description || undefined,
+  };
+
+  const parsed = productSchema.safeParse(cleanData);
   if (!parsed.success) {
     return { error: z.prettifyError(parsed.error) };
   }
