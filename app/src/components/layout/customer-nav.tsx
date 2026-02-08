@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Home, ShoppingBag, ShoppingCart, ClipboardList, User } from 'lucide-react';
+import { Home, ShoppingBag, ShoppingCart, ClipboardList, User, Beef } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/lib/cart-context';
 
@@ -25,15 +24,9 @@ export function CustomerNav() {
   return (
     <>
       {/* Top header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#2a2a2a] text-white px-4 py-2">
-        <Link href="/order" className="flex items-center justify-center gap-2.5 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto">
-          <Image
-            src="/images/le_boeuf_logo_simple.jpg"
-            alt="Le Boeuf Shoppe"
-            width={36}
-            height={36}
-            className="rounded"
-          />
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#2a2a2a] text-white px-4 py-3">
+        <Link href="/order" className="flex items-center justify-center gap-2 max-w-lg md:max-w-2xl lg:max-w-4xl mx-auto">
+          <Beef className="h-5 w-5 text-red-500" />
           <h1 className="text-sm font-bold tracking-tight">Le Boeuf Shoppe</h1>
         </Link>
       </header>

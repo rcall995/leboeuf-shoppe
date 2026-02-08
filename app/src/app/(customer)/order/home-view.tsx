@@ -80,8 +80,8 @@ export function HomeView({ customerName, businessName, recentOrders, announcemen
       <div className="relative -mx-4 -mt-4 md:mx-0 md:mt-0 md:rounded-xl overflow-hidden">
         <div className="relative h-48 sm:h-56 md:h-64 lg:h-72">
           <Image
-            src="/images/steak1.jpeg"
-            alt="Premium wagyu steak"
+            src="/images/hero.png"
+            alt="Le Boeuf Shoppe — Premium Wagyu"
             fill
             className="object-cover"
             priority
