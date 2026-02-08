@@ -91,16 +91,13 @@ export function HomeView({ customerName, businessName, recentOrders, announcemen
             className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/30 to-transparent"
             style={{ clipPath: 'polygon(0 0, 50% 0, 0 30%)' }}
           />
-          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
+          <div className="absolute top-0 left-0 p-4 sm:p-6 md:p-8">
             <p className="text-white/80 text-xs sm:text-sm font-medium tracking-wider uppercase">
               {businessName}
             </p>
             <h1 className="text-white text-xl sm:text-2xl md:text-4xl font-bold mt-0.5 sm:mt-1">
               Welcome, {firstName}
             </h1>
-            <p className="text-white/70 text-[11px] sm:text-sm mt-0.5 sm:mt-1">
-              Never Frozen. Always Fresh. Always Wagyu.
-            </p>
           </div>
         </div>
       </div>
