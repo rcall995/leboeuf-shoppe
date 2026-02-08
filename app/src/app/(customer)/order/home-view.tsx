@@ -87,7 +87,10 @@ export function HomeView({ customerName, businessName, recentOrders, announcemen
             className="w-full h-auto"
             priority
           />
-          <div className="absolute inset-x-0 top-0 h-2/5 bg-gradient-to-b from-black/70 to-transparent" />
+          <div
+            className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/30 to-transparent"
+            style={{ clipPath: 'polygon(0 0, 50% 0, 0 30%)' }}
+          />
           <div className="absolute top-0 left-0 right-0 p-4 sm:p-6 md:p-8">
             <p className="text-white/80 text-xs sm:text-sm font-medium tracking-wider uppercase">
               {businessName}
