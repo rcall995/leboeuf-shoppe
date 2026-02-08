@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   title: "Le Boeuf Shoppe",
   description: "Premium Wagyu ordering & inventory management. Never Frozen. Always Fresh. Always Wagyu.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

@@ -77,24 +77,25 @@ export function HomeView({ customerName, businessName, recentOrders, announcemen
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <div className="relative -mx-4 -mt-4 md:mx-0 md:mt-0 md:rounded-xl overflow-hidden">
-        <div className="relative h-48 sm:h-56 md:h-64 lg:h-72">
+      <div className="relative -mx-4 -mt-4 md:mx-0 md:mt-0 md:rounded-xl overflow-hidden bg-[#2a2019]">
+        <div className="relative w-full">
           <Image
             src="/images/hero.png"
             alt="Le Boeuf Shoppe — Premium Wagyu"
-            fill
-            className="object-cover"
+            width={1200}
+            height={630}
+            className="w-full h-auto"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6 md:p-8">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
             <p className="text-white/80 text-xs sm:text-sm font-medium tracking-wider uppercase">
               {businessName}
             </p>
-            <h1 className="text-white text-2xl sm:text-3xl md:text-4xl font-bold mt-1">
+            <h1 className="text-white text-xl sm:text-2xl md:text-4xl font-bold mt-0.5 sm:mt-1">
               Welcome, {firstName}
             </h1>
-            <p className="text-white/70 text-xs sm:text-sm mt-1">
+            <p className="text-white/70 text-[11px] sm:text-sm mt-0.5 sm:mt-1">
               Never Frozen. Always Fresh. Always Wagyu.
             </p>
           </div>
