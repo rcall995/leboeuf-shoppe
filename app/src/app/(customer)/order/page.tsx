@@ -34,12 +34,17 @@ export default async function CustomerHomePage() {
       created_at,
       items:order_items(
         id,
+        variant_id,
         quantity,
         unit,
+        price_per_unit,
         estimated_weight_lb,
         estimated_line_total,
         variant:product_variants(
           name,
+          sku,
+          weight_type,
+          estimated_weight_lb,
           product:products(name)
         )
       )
@@ -67,12 +72,17 @@ export default async function CustomerHomePage() {
 
   type OrderItem = {
     id: string;
+    variant_id: string;
     quantity: number;
     unit: string;
+    price_per_unit: number;
     estimated_weight_lb: number | null;
     estimated_line_total: number | null;
     variant: {
       name: string;
+      sku: string | null;
+      weight_type: string;
+      estimated_weight_lb: number | null;
       product: { name: string };
     };
   };

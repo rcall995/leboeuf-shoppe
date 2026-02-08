@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,15 +8,21 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingBag, ClipboardList, RotateCcw, Clock, Package, ChevronRight } from 'lucide-react';
 import { AnnouncementsBanner } from '@/components/announcements/announcements-banner';
+import { useCart } from '@/lib/cart-context';
 
 interface OrderItem {
   id: string;
+  variant_id: string;
   quantity: number;
   unit: string;
+  price_per_unit: number;
   estimated_weight_lb: number | null;
   estimated_line_total: number | null;
   variant: {
     name: string;
+    sku: string | null;
+    weight_type: string;
+    estimated_weight_lb: number | null;
     product: { name: string };
   };
 }
@@ -73,6 +80,26 @@ export function HomeView({ customerName, businessName, recentOrders, announcemen
   const firstName = customerName.split(' ')[0];
   const activeOrders = recentOrders.filter((o) => !['delivered', 'cancelled'].includes(o.status));
   const lastOrder = recentOrders[0] ?? null;
+  const { clearCart, addItem } = useCart();
+  const router = useRouter();
+
+  function handleReorder(order: Order) {
+    clearCart();
+    for (const item of order.items) {
+      addItem({
+        variant_id: item.variant_id,
+        product_name: item.variant.product.name,
+        variant_name: item.variant.name,
+        sku: item.variant.sku,
+        quantity_lbs: item.unit === 'case' ? item.quantity : (item.estimated_weight_lb ?? item.quantity),
+        price_per_unit: item.price_per_unit,
+        unit: item.unit,
+        weight_type: item.variant.weight_type,
+        estimated_weight_per_piece: item.variant.estimated_weight_lb,
+      });
+    }
+    router.push('/order/cart');
+  }
 
   return (
     <div className="space-y-6">
@@ -219,12 +246,10 @@ export function HomeView({ customerName, businessName, recentOrders, announcemen
                 <span className="text-sm font-bold">
                   ${(lastOrder.estimated_total ?? 0).toFixed(2)}
                 </span>
-                <Link href="/order/catalog">
-                  <Button size="sm" variant="outline">
-                    <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                    Reorder
-                  </Button>
-                </Link>
+                <Button size="sm" variant="outline" onClick={() => handleReorder(lastOrder)}>
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                  Reorder
+                </Button>
               </div>
             </CardContent>
           </Card>
