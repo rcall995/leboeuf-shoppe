@@ -6,13 +6,23 @@ import { ShoppingCart } from 'lucide-react';
 import { getPendingOrders } from '@/app/actions/orders';
 
 const POLL_INTERVAL = 15_000;
-const SOUND_URL = 'https://cdn.freesound.org/previews/536/536420_4921277-lq.mp3';
-
 function playNotificationSound() {
   try {
-    const audio = new Audio(SOUND_URL);
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
+    const ctx = new AudioContext();
+    // Two-tone chime: C5 then E5
+    const notes = [523.25, 659.25];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.4);
+    });
   } catch {}
 }
 
