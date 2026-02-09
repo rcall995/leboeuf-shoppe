@@ -61,6 +61,60 @@ export async function sendOrderConfirmation(data: OrderConfirmationData) {
   }
 }
 
+interface NewOrderAlertData {
+  to: string;
+  customerName: string;
+  businessName: string;
+  orderNumber: string;
+  estimatedTotal: number;
+  items: { productName: string; quantity: number; unit: string; pricePerUnit: number }[];
+}
+
+export async function sendNewOrderAlert(data: NewOrderAlertData) {
+  if (!resend) return;
+
+  try {
+    const itemRows = data.items
+      .map(
+        (item) =>
+          `<tr>
+            <td style="padding:8px;border-bottom:1px solid #eee">${item.productName}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${item.quantity} ${item.unit}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">$${item.pricePerUnit.toFixed(2)}/${item.unit}</td>
+          </tr>`
+      )
+      .join('');
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.to,
+      subject: `New Order: ${data.orderNumber} from ${data.businessName}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
+          <h2 style="color:#18181b">New Order Received</h2>
+          <p><strong>${data.businessName}</strong> (${data.customerName}) just placed an order.</p>
+          <p>Order: <strong>${data.orderNumber}</strong></p>
+          <table style="width:100%;border-collapse:collapse;margin:16px 0">
+            <thead>
+              <tr style="background:#f5f5f5">
+                <th style="padding:8px;text-align:left;font-size:12px;text-transform:uppercase">Product</th>
+                <th style="padding:8px;text-align:right;font-size:12px;text-transform:uppercase">Qty</th>
+                <th style="padding:8px;text-align:right;font-size:12px;text-transform:uppercase">Price</th>
+              </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+          <p style="font-size:18px;font-weight:bold">Estimated Total: $${data.estimatedTotal.toFixed(2)}</p>
+          <hr style="border:none;border-top:1px solid #eee;margin:24px 0" />
+          <p style="color:#999;font-size:12px">Le Boeuf Shoppe &mdash; Never Frozen. Always Fresh. Always Wagyu.</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error('Failed to send new order alert email:', error);
+  }
+}
+
 interface StatusUpdateData {
   to: string;
   customerName: string;

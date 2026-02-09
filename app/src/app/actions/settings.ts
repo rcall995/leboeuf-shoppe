@@ -14,6 +14,7 @@ const tenantSettingsSchema = z.object({
     contact_phone: z.string().optional(),
     address: z.string().optional(),
     tagline: z.string().optional(),
+    order_notification_email: z.string().optional(),
   }).optional(),
 });
 
@@ -26,6 +27,7 @@ export async function updateTenantSettings(formData: {
     contact_phone?: string;
     address?: string;
     tagline?: string;
+    order_notification_email?: string;
   };
 }) {
   const profile = await getProfile();

@@ -20,6 +20,7 @@ interface TenantData {
     contact_phone?: string;
     address?: string;
     tagline?: string;
+    order_notification_email?: string;
   };
 }
 
@@ -37,6 +38,7 @@ export function SettingsView({ tenant, profileName, profileEmail }: SettingsView
   const [contactPhone, setContactPhone] = useState(tenant.settings?.contact_phone ?? '');
   const [address, setAddress] = useState(tenant.settings?.address ?? '');
   const [tagline, setTagline] = useState(tenant.settings?.tagline ?? '');
+  const [orderNotificationEmail, setOrderNotificationEmail] = useState(tenant.settings?.order_notification_email ?? '');
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
@@ -56,6 +58,7 @@ export function SettingsView({ tenant, profileName, profileEmail }: SettingsView
           contact_phone: contactPhone.trim() || undefined,
           address: address.trim() || undefined,
           tagline: tagline.trim() || undefined,
+          order_notification_email: orderNotificationEmail.trim() || undefined,
         },
       });
 
@@ -156,6 +159,31 @@ export function SettingsView({ tenant, profileName, profileEmail }: SettingsView
             />
           </div>
 
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Notifications */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base">Notifications</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="s-notify-email">Order Notification Email</Label>
+            <Input
+              id="s-notify-email"
+              type="email"
+              value={orderNotificationEmail}
+              onChange={(e) => setOrderNotificationEmail(e.target.value)}
+              placeholder="joe@leboeuf shoppe.com"
+            />
+            <p className="text-xs text-muted-foreground">
+              Receive an email every time a customer places an order. Leave blank to disable.
+            </p>
+          </div>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>

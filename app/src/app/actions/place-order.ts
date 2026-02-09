@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getProfile } from '@/lib/auth';
-import { sendOrderConfirmation } from '@/lib/email';
+import { sendOrderConfirmation, sendNewOrderAlert } from '@/lib/email';
 
 interface OrderItemInput {
   variant_id: string;
@@ -106,30 +106,53 @@ export async function placeOrder(input: PlaceOrderInput) {
     return { order_number: order.order_number, warning: 'Order placed but some items may not have saved. Please check your order history.' };
   }
 
-  // Send confirmation email (fire-and-forget)
+  // Fetch variant names for emails
+  const { data: variants } = await supabase
+    .from('product_variants')
+    .select('id, name, product:products(name)')
+    .in('id', input.items.map((i) => i.variant_id));
+
+  type VariantLookup = { id: string; name: string; product: { name: string } };
+  const variantMap = new Map(
+    ((variants ?? []) as unknown as VariantLookup[]).map((v) => [v.id, `${v.product.name} - ${v.name}`])
+  );
+
+  const emailItems = input.items.map((item) => ({
+    productName: variantMap.get(item.variant_id) ?? 'Product',
+    quantity: item.quantity_lbs,
+    unit: item.unit,
+    pricePerUnit: item.price_per_unit,
+  }));
+
+  const roundedTotal = Math.round(estimated_total * 100) / 100;
+
+  // Send customer confirmation email (fire-and-forget)
   if (customer.email) {
-    // Fetch variant names for the email
-    const { data: variants } = await supabase
-      .from('product_variants')
-      .select('id, name, product:products(name)')
-      .in('id', input.items.map((i) => i.variant_id));
-
-    type VariantLookup = { id: string; name: string; product: { name: string } };
-    const variantMap = new Map(
-      ((variants ?? []) as unknown as VariantLookup[]).map((v) => [v.id, `${v.product.name} - ${v.name}`])
-    );
-
     sendOrderConfirmation({
       to: customer.email,
       customerName: customer.contact_name ?? customer.business_name,
       orderNumber: order.order_number,
-      estimatedTotal: Math.round(estimated_total * 100) / 100,
-      items: input.items.map((item) => ({
-        productName: variantMap.get(item.variant_id) ?? 'Product',
-        quantity: item.quantity_lbs,
-        unit: item.unit,
-        pricePerUnit: item.price_per_unit,
-      })),
+      estimatedTotal: roundedTotal,
+      items: emailItems,
+    });
+  }
+
+  // Send admin notification email (fire-and-forget)
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('settings')
+    .eq('id', profile.tenant_id)
+    .single();
+
+  const notifyEmail = (tenant?.settings as Record<string, string> | null)?.order_notification_email;
+  if (notifyEmail) {
+    sendNewOrderAlert({
+      to: notifyEmail,
+      customerName: customer.contact_name ?? customer.business_name,
+      businessName: customer.business_name,
+      orderNumber: order.order_number,
+      estimatedTotal: roundedTotal,
+      items: emailItems,
     });
   }
 
