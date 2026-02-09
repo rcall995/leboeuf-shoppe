@@ -10,19 +10,15 @@ const POLL_INTERVAL = 15_000;
 // Shared AudioContext — unlocked on first user click
 let audioCtx: AudioContext | null = null;
 
-function ensureAudioContext() {
-  if (!audioCtx) {
-    audioCtx = new AudioContext();
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-  return audioCtx;
-}
-
-function playNotificationSound() {
+async function playNotificationSound() {
   try {
-    const ctx = ensureAudioContext();
+    if (!audioCtx) {
+      audioCtx = new AudioContext();
+    }
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+    const ctx = audioCtx;
     // Two-tone chime: C5 then E5
     const notes = [523.25, 659.25];
     notes.forEach((freq, i) => {
@@ -46,7 +42,8 @@ export function OrderNotifications() {
   // Unlock AudioContext on first user interaction
   useEffect(() => {
     function unlock() {
-      ensureAudioContext();
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
       document.removeEventListener('click', unlock);
       document.removeEventListener('keydown', unlock);
     }
