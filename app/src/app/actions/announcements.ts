@@ -48,7 +48,7 @@ export async function createAnnouncement(formData: {
   }
 
   revalidatePath('/admin/announcements');
-  revalidatePath('/order/catalog');
+  revalidatePath('/order');
   return { id: data.id };
 }
 
@@ -85,7 +85,7 @@ export async function updateAnnouncement(
   }
 
   revalidatePath('/admin/announcements');
-  revalidatePath('/order/catalog');
+  revalidatePath('/order');
   return { success: true };
 }
 
@@ -108,7 +108,7 @@ export async function deleteAnnouncement(id: string) {
   }
 
   revalidatePath('/admin/announcements');
-  revalidatePath('/order/catalog');
+  revalidatePath('/order');
   return { success: true };
 }
 
@@ -136,6 +136,6 @@ export async function markAnnouncementRead(announcementId: string) {
     return { error: 'Failed to mark as read' };
   }
 
-  revalidatePath('/order/catalog');
+  revalidatePath('/order');
   return { success: true };
 }
