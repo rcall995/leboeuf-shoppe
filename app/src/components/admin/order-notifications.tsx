@@ -6,9 +6,23 @@ import { ShoppingCart } from 'lucide-react';
 import { getPendingOrders } from '@/app/actions/orders';
 
 const POLL_INTERVAL = 15_000;
+
+// Shared AudioContext — unlocked on first user click
+let audioCtx: AudioContext | null = null;
+
+function ensureAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
 function playNotificationSound() {
   try {
-    const ctx = new AudioContext();
+    const ctx = ensureAudioContext();
     // Two-tone chime: C5 then E5
     const notes = [523.25, 659.25];
     notes.forEach((freq, i) => {
@@ -28,6 +42,21 @@ function playNotificationSound() {
 
 export function OrderNotifications() {
   const knownIds = useRef<Set<string> | null>(null);
+
+  // Unlock AudioContext on first user interaction
+  useEffect(() => {
+    function unlock() {
+      ensureAudioContext();
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('keydown', unlock);
+    }
+    document.addEventListener('click', unlock);
+    document.addEventListener('keydown', unlock);
+    return () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('keydown', unlock);
+    };
+  }, []);
 
   useEffect(() => {
     async function poll() {
