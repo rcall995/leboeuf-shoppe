@@ -1,4 +1,5 @@
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
+import { OrderNotifications } from '@/components/admin/order-notifications';
 
 export default function AdminLayout({
   children,
@@ -12,6 +13,7 @@ export default function AdminLayout({
       <main className="lg:pl-64 pt-14 lg:pt-0">
         <div className="p-6">{children}</div>
       </main>
+      <OrderNotifications />
     </div>
   );
 }
