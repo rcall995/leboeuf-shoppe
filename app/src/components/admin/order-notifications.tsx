@@ -1,59 +1,31 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Bell } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { getPendingOrders } from '@/app/actions/orders';
 
 const POLL_INTERVAL = 15_000;
 
-// Shared AudioContext — unlocked on first user click
-let audioCtx: AudioContext | null = null;
-
-async function playNotificationSound() {
-  try {
-    if (!audioCtx) {
-      audioCtx = new AudioContext();
-    }
-    if (audioCtx.state === 'suspended') {
-      await audioCtx.resume();
-    }
-    const ctx = audioCtx;
-    // Two-tone chime: C5 then E5
-    const notes = [523.25, 659.25];
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.4);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + i * 0.15);
-      osc.stop(ctx.currentTime + i * 0.15 + 0.4);
-    });
-  } catch {}
-}
-
 export function OrderNotifications() {
   const knownIds = useRef<Set<string> | null>(null);
+  const [needsPermission, setNeedsPermission] = useState(false);
 
-  // Unlock AudioContext on first user interaction
+  // Check notification permission on mount
   useEffect(() => {
-    function unlock() {
-      if (!audioCtx) audioCtx = new AudioContext();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      document.removeEventListener('click', unlock);
-      document.removeEventListener('keydown', unlock);
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      setNeedsPermission(true);
     }
-    document.addEventListener('click', unlock);
-    document.addEventListener('keydown', unlock);
-    return () => {
-      document.removeEventListener('click', unlock);
-      document.removeEventListener('keydown', unlock);
-    };
   }, []);
+
+  function handleEnableNotifications() {
+    Notification.requestPermission().then((perm) => {
+      if (perm === 'granted') {
+        setNeedsPermission(false);
+      }
+    });
+  }
 
   useEffect(() => {
     async function poll() {
@@ -72,8 +44,22 @@ export function OrderNotifications() {
               ? `$${order.estimated_total.toFixed(2)}`
               : '';
 
-            playNotificationSound();
+            // Browser notification with sound
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              const n = new Notification(`New Order: ${order.order_number}`, {
+                body: `${order.business_name}${total ? ` — ${total}` : ''}`,
+                icon: '/icon-192.png',
+                requireInteraction: true,
+                tag: `order-${order.id}`,
+              });
+              n.onclick = () => {
+                window.focus();
+                window.location.href = `/admin/orders/${order.id}`;
+                n.close();
+              };
+            }
 
+            // In-app toast (stays until dismissed)
             toast.custom(
               (id) => (
                 <div
@@ -117,6 +103,24 @@ export function OrderNotifications() {
     const interval = setInterval(poll, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, []);
+
+  // Show a banner prompting to enable notifications
+  if (needsPermission) {
+    return (
+      <div className="fixed bottom-4 right-4 z-50">
+        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-lg">
+          <Bell className="h-5 w-5 text-blue-600 shrink-0" />
+          <div className="text-sm">
+            <p className="font-medium text-blue-900">Enable order alerts?</p>
+            <p className="text-blue-700 text-xs">Get sound notifications for new orders</p>
+          </div>
+          <Button size="sm" onClick={handleEnableNotifications}>
+            Enable
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return null;
 }
