@@ -1,33 +1,39 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
+const POLL_INTERVAL = 15_000; // 15 seconds
+
 export function OrderNotifications() {
+  const knownOrderIds = useRef<Set<string> | null>(null);
+
   useEffect(() => {
     const supabase = createClient();
 
-    const channel = supabase
-      .channel('new-orders')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'orders' },
-        async (payload) => {
-          const order = payload.new as {
-            id: string;
-            order_number: string;
-            customer_id: string;
-            estimated_total: number | null;
-          };
+    async function checkForNewOrders() {
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('id, order_number, estimated_total, customer_id, customers(business_name)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-          // Fetch customer name for the toast
-          const { data: customer } = await supabase
-            .from('customers')
-            .select('business_name')
-            .eq('id', order.customer_id)
-            .single();
+      if (!orders) return;
 
+      const currentIds = new Set(orders.map((o) => o.id));
+
+      // First run — seed known IDs, don't notify
+      if (knownOrderIds.current === null) {
+        knownOrderIds.current = currentIds;
+        return;
+      }
+
+      // Find new orders we haven't seen
+      for (const order of orders) {
+        if (!knownOrderIds.current.has(order.id)) {
+          const customer = order.customers as unknown as { business_name: string } | null;
           const name = customer?.business_name ?? 'A customer';
           const total = order.estimated_total
             ? ` — $${order.estimated_total.toFixed(2)}`
@@ -35,7 +41,7 @@ export function OrderNotifications() {
 
           toast.info(`New Order: ${order.order_number}`, {
             description: `${name}${total}`,
-            duration: 10000,
+            duration: 15000,
             action: {
               label: 'View',
               onClick: () => {
@@ -44,12 +50,18 @@ export function OrderNotifications() {
             },
           });
         }
-      )
-      .subscribe();
+      }
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      knownOrderIds.current = currentIds;
+    }
+
+    // Initial check
+    checkForNewOrders();
+
+    // Poll
+    const interval = setInterval(checkForNewOrders, POLL_INTERVAL);
+
+    return () => clearInterval(interval);
   }, []);
 
   return null;
