@@ -41,13 +41,26 @@ export async function updateTenantSettings(formData: {
   }
 
   const supabase = await createClient();
+
+  // Merge new settings with existing to avoid losing fields
+  const { data: existing } = await supabase
+    .from('tenants')
+    .select('settings')
+    .eq('id', profile.tenant_id)
+    .single();
+
+  const mergedSettings = {
+    ...((existing?.settings as Record<string, unknown>) ?? {}),
+    ...(parsed.data.settings ?? {}),
+  };
+
   const { error } = await supabase
     .from('tenants')
     .update({
       name: parsed.data.name,
       domain: parsed.data.domain ?? null,
       logo_url: parsed.data.logo_url ?? null,
-      settings: parsed.data.settings ?? {},
+      settings: mergedSettings,
     })
     .eq('id', profile.tenant_id);
 
@@ -57,5 +70,6 @@ export async function updateTenantSettings(formData: {
   }
 
   revalidatePath('/admin/settings');
+  revalidatePath('/admin');
   return { success: true };
 }
