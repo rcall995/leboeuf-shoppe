@@ -107,7 +107,7 @@ export function OrderNotifications() {
                   </div>
                 </div>
               ),
-              { duration: 30000, position: 'top-center' }
+              { duration: Infinity, position: 'top-center' }
             );
           }
         }
