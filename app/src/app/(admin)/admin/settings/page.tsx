@@ -23,6 +23,7 @@ export default async function SettingsPage() {
       contact_phone?: string;
       address?: string;
       tagline?: string;
+      order_notification_email?: string;
     };
   };
 
