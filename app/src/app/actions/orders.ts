@@ -16,6 +16,27 @@ const STATUS_FLOW: Record<string, string[]> = {
   cancelled: [],
 };
 
+export async function getPendingOrders() {
+  const profile = await getProfile();
+  if (!profile || profile.role === 'customer') return [];
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('orders')
+    .select('id, order_number, estimated_total, customers(business_name)')
+    .eq('tenant_id', profile.tenant_id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  return (data ?? []).map((o) => ({
+    id: o.id,
+    order_number: o.order_number,
+    estimated_total: o.estimated_total,
+    business_name: (o.customers as unknown as { business_name: string } | null)?.business_name ?? 'Unknown',
+  }));
+}
+
 export async function updateOrderStatus(orderId: string, newStatus: string) {
   const profile = await getProfile();
   if (!profile || profile.role === 'customer') {

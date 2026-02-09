@@ -1,66 +1,54 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { getPendingOrders } from '@/app/actions/orders';
 
-const POLL_INTERVAL = 15_000; // 15 seconds
+const POLL_INTERVAL = 15_000;
 
 export function OrderNotifications() {
-  const knownOrderIds = useRef<Set<string> | null>(null);
+  const knownIds = useRef<Set<string> | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
+    async function poll() {
+      try {
+        const orders = await getPendingOrders();
+        const currentIds = new Set(orders.map((o) => o.id));
 
-    async function checkForNewOrders() {
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('id, order_number, estimated_total, customer_id, customers(business_name)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (!orders) return;
-
-      const currentIds = new Set(orders.map((o) => o.id));
-
-      // First run — seed known IDs, don't notify
-      if (knownOrderIds.current === null) {
-        knownOrderIds.current = currentIds;
-        return;
-      }
-
-      // Find new orders we haven't seen
-      for (const order of orders) {
-        if (!knownOrderIds.current.has(order.id)) {
-          const customer = order.customers as unknown as { business_name: string } | null;
-          const name = customer?.business_name ?? 'A customer';
-          const total = order.estimated_total
-            ? ` — $${order.estimated_total.toFixed(2)}`
-            : '';
-
-          toast.info(`New Order: ${order.order_number}`, {
-            description: `${name}${total}`,
-            duration: 15000,
-            action: {
-              label: 'View',
-              onClick: () => {
-                window.location.href = `/admin/orders/${order.id}`;
-              },
-            },
-          });
+        // First run — seed known IDs, don't notify
+        if (knownIds.current === null) {
+          knownIds.current = currentIds;
+          return;
         }
-      }
 
-      knownOrderIds.current = currentIds;
+        // Show toast for any new orders
+        for (const order of orders) {
+          if (!knownIds.current.has(order.id)) {
+            const total = order.estimated_total
+              ? ` — $${order.estimated_total.toFixed(2)}`
+              : '';
+
+            toast.info(`New Order: ${order.order_number}`, {
+              description: `${order.business_name}${total}`,
+              duration: 15000,
+              action: {
+                label: 'View',
+                onClick: () => {
+                  window.location.href = `/admin/orders/${order.id}`;
+                },
+              },
+            });
+          }
+        }
+
+        knownIds.current = currentIds;
+      } catch {
+        // Silently ignore polling errors
+      }
     }
 
-    // Initial check
-    checkForNewOrders();
-
-    // Poll
-    const interval = setInterval(checkForNewOrders, POLL_INTERVAL);
-
+    poll();
+    const interval = setInterval(poll, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, []);
 
